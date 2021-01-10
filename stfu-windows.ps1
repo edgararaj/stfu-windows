@@ -221,8 +221,8 @@ $regAliases = @("HKLM", "HKCU")
 #Assign the start layout and force it to apply with "LockedStartLayout" at both the machine and user level
 foreach ($regAlias in $regAliases){
     $basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"
-    $keyPath = $basePath + "\Explorer" 
-    IF(!(Test-Path -Path $keyPath)) { 
+    $keyPath = $basePath + "\Explorer"
+    IF(!(Test-Path -Path $keyPath)) {
         New-Item -Path $basePath -Name "Explorer"
     }
     Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 1
@@ -238,7 +238,7 @@ Start-Sleep -s 5
 #Enable the ability to pin items again by disabling "LockedStartLayout"
 foreach ($regAlias in $regAliases){
     $basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"
-    $keyPath = $basePath + "\Explorer" 
+    $keyPath = $basePath + "\Explorer"
     Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 0
 }
 
@@ -268,3 +268,4 @@ Write-Host "Press any key to restart your system..." -ForegroundColor Black -Bac
 $key = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 Write-Host "Restarting..."
 Restart-Computer
+
