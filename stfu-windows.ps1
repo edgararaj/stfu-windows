@@ -73,6 +73,14 @@ Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" 
 Write-Host "Hiding Task View button..."
 Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "ShowTaskViewButton" -Type DWord -Value 0
 
+# Hide Cortana button
+Write-Host "Hiding Cortana button..."
+Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "ShowCortanaButton" -Type DWord -Value 0
+
+# Hide People on the taskbar
+Write-Host "Hiding People on the taskbar..."
+Set-ItemProperty -Path "HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer" -Name "HidePeopleBar" -Type DWord -Value 1
+
 # Show small icons in taskbar
 Write-Host "Showing small icons in taskbar..."
 Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "TaskbarSmallIcons" -Type DWord -Value 1
@@ -264,8 +272,6 @@ reg add "HKEY_USERS\.DEFAULT\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Pe
 # Restart
 ##########
 Write-Host
-Write-Host "Press any key to restart your system..." -ForegroundColor Black -BackgroundColor White
-$key = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-Write-Host "Restarting..."
-Restart-Computer
+Write-Host "Please restart your system!" -ForegroundColor Black -BackgroundColor White
+$key = $host.UI.RawUI.ReadKey()
 
