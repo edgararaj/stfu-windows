@@ -93,14 +93,6 @@ Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer
 Write-Host "Hiding all tray icons..."
 Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer" -Name "EnableAutoTray"
 
-# Set Taskbar position
-Write-Host "Setting taskbar position..."
-Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StuckRects3" -Name "Settings" -Type Binary -Value (0x30, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0xFF, 0xFF,
-                                                                                                                                    0x02, 0x24, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
-                                                                                                                                    0x5D, 0x00, 0x00, 0x00, 0x1E, 0x00, 0x00, 0x00,
-                                                                                                                                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                                                                                                                    0x80, 0x07, 0x00, 0x00, 0x1E, 0x00, 0x00, 0x00,
-                                                                                                                                    0x60, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00)
 # Show known file extensions
 Write-Host "Showing known file extensions..."
 Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideFileExt" -Type DWord -Value 0
@@ -248,8 +240,6 @@ foreach ($regAlias in $regAliases){
 #Restart Explorer, open the start menu (necessary to load the new layout), and give it a few seconds to process
 Stop-Process -name explorer
 Start-Sleep -s 5
-$wshell = New-Object -ComObject wscript.shell; $wshell.SendKeys('^{ESCAPE}')
-Start-Sleep -s 5
 
 #Enable the ability to pin items again by disabling "LockedStartLayout"
 foreach ($regAlias in $regAliases){
@@ -260,8 +250,13 @@ foreach ($regAlias in $regAliases){
 
 #Restart Explorer and delete the layout file
 Stop-Process -name explorer
+Start-Sleep -s 5
 
 Remove-Item $layoutFile
+
+# Lock taskbar
+Write-Host "Locking taskbar..."
+Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" -Name "TaskbarLockAll" -Type DWord -Value 1
 
 # Set Windows to Dark Mode #
 reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes" /f
