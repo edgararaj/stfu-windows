@@ -262,10 +262,6 @@ Start-Sleep -s 5
 
 Remove-Item $layoutFile
 
-# Lock taskbar
-Write-Host "Locking taskbar..."
-Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" -Name "TaskbarLockAll" -Type DWord -Value 1
-
 # Set Windows to Dark Mode #
 reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes" /f
 reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes" /v "AppsUseLightTheme" /t "REG_DWORD" /d "0" /f
