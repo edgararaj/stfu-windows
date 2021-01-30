@@ -1,3 +1,7 @@
+#	Brief: Settings that should be default out of the box
+#   Author: Edgar Araújo <edgararaj@gmail.com>
+#   Copyright 2021
+
 # Ask for elevated permissions if required
 If (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]"Administrator")) {
 	Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
@@ -157,9 +161,6 @@ Get-AppxPackage "Microsoft.XboxSpeechToTextOverlay" | Remove-AppxPackage
 Get-AppxPackage "Microsoft.MixedReality.Portal" | Remove-AppxPackage
 Get-AppxPackage "Microsoft.XboxIdentityProvider" | Remove-AppPackage
 
-Write-Output "Elevating privileges for this process"
-do {} until (Elevate-Privileges SeTakeOwnershipPrivilege)
-
 Write-Output "Uninstalling default apps"
 $apps = @(
     # default Windows 10 apps
@@ -317,87 +318,17 @@ $cdm = @(
     "SystemPaneSuggestionsEnabled"
 )
 
-New-FolderForced -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+New-Item -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
 foreach ($key in $cdm) {
     Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" $key 0
 }
 
-New-FolderForced -Path "HKLM:\SOFTWARE\Policies\Microsoft\WindowsStore"
+New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\WindowsStore"
 Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\WindowsStore" "AutoDownload" 2
 
 # Prevents "Suggested Applications" returning
 New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent"
 Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent" "DisableWindowsConsumerFeatures" 1
-
-# This script removes all Start Menu Tiles from the .default user #
-Set-Content -Path 'C:\Users\Default\AppData\Local\Microsoft\Windows\Shell\DefaultLayouts.xml' -Value '<LayoutModificationTemplate xmlns:defaultlayout="http://schemas.microsoft.com/Start/2014/FullDefaultLayout" xmlns:start="http://schemas.microsoft.com/Start/2014/StartLayout" Version="1" xmlns="http://schemas.microsoft.com/Start/2014/LayoutModification">'
-Add-Content -Path 'C:\Users\Default\AppData\Local\Microsoft\Windows\Shell\DefaultLayouts.xml' -value '  <LayoutOptions StartTileGroupCellWidth="6" />'
-Add-Content -Path 'C:\Users\Default\AppData\Local\Microsoft\Windows\Shell\DefaultLayouts.xml' -value '  <DefaultLayoutOverride>'
-Add-Content -Path 'C:\Users\Default\AppData\Local\Microsoft\Windows\Shell\DefaultLayouts.xml' -value '    <StartLayoutCollection>'
-Add-Content -Path 'C:\Users\Default\AppData\Local\Microsoft\Windows\Shell\DefaultLayouts.xml' -value '      <defaultlayout:StartLayout GroupCellWidth="6" />'
-Add-Content -Path 'C:\Users\Default\AppData\Local\Microsoft\Windows\Shell\DefaultLayouts.xml' -value '    </StartLayoutCollection>'
-Add-Content -Path 'C:\Users\Default\AppData\Local\Microsoft\Windows\Shell\DefaultLayouts.xml' -value '  </DefaultLayoutOverride>'
-Add-Content -Path 'C:\Users\Default\AppData\Local\Microsoft\Windows\Shell\DefaultLayouts.xml' -value '    <CustomTaskbarLayoutCollection>'
-Add-Content -Path 'C:\Users\Default\AppData\Local\Microsoft\Windows\Shell\DefaultLayouts.xml' -value '      <defaultlayout:TaskbarLayout>'
-Add-Content -Path 'C:\Users\Default\AppData\Local\Microsoft\Windows\Shell\DefaultLayouts.xml' -value '        <taskbar:TaskbarPinList>'
-Add-Content -Path 'C:\Users\Default\AppData\Local\Microsoft\Windows\Shell\DefaultLayouts.xml' -value '          <taskbar:UWA AppUserModelID="Microsoft.MicrosoftEdge_8wekyb3d8bbwe!MicrosoftEdge" />'
-Add-Content -Path 'C:\Users\Default\AppData\Local\Microsoft\Windows\Shell\DefaultLayouts.xml' -value '          <taskbar:DesktopApp DesktopApplicationLinkPath="%APPDATA%\Microsoft\Windows\Start Menu\Programs\System Tools\File Explorer.lnk" />'
-Add-Content -Path 'C:\Users\Default\AppData\Local\Microsoft\Windows\Shell\DefaultLayouts.xml' -value '        </taskbar:TaskbarPinList>'
-Add-Content -Path 'C:\Users\Default\AppData\Local\Microsoft\Windows\Shell\DefaultLayouts.xml' -value '      </defaultlayout:TaskbarLayout>'
-Add-Content -Path 'C:\Users\Default\AppData\Local\Microsoft\Windows\Shell\DefaultLayouts.xml' -value '    </CustomTaskbarLayoutCollection>'
-Add-Content -Path 'C:\Users\Default\AppData\Local\Microsoft\Windows\Shell\DefaultLayouts.xml' -value '</LayoutModificationTemplate>'
-
-$START_MENU_LAYOUT = @"
-<LayoutModificationTemplate xmlns:defaultlayout="http://schemas.microsoft.com/Start/2014/FullDefaultLayout" xmlns:start="http://schemas.microsoft.com/Start/2014/StartLayout" Version="1" xmlns:taskbar="http://schemas.microsoft.com/Start/2014/TaskbarLayout" xmlns="http://schemas.microsoft.com/Start/2014/LayoutModification">
-    <LayoutOptions StartTileGroupCellWidth="6" />
-    <DefaultLayoutOverride>
-        <StartLayoutCollection>
-            <defaultlayout:StartLayout GroupCellWidth="6" />
-        </StartLayoutCollection>
-    </DefaultLayoutOverride>
-</LayoutModificationTemplate>
-"@
-
-$layoutFile="C:\Windows\StartMenuLayout.xml"
-
-#Delete layout file if it already exists
-If(Test-Path $layoutFile)
-{
-    Remove-Item $layoutFile
-}
-
-#Creates the blank layout file
-$START_MENU_LAYOUT | Out-File $layoutFile -Encoding ASCII
-
-$regAliases = @("HKLM", "HKCU")
-
-#Assign the start layout and force it to apply with "LockedStartLayout" at both the machine and user level
-foreach ($regAlias in $regAliases){
-    $basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"
-    $keyPath = $basePath + "\Explorer"
-    IF(!(Test-Path -Path $keyPath)) {
-        New-Item -Path $basePath -Name "Explorer"
-    }
-    Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 1
-    Set-ItemProperty -Path $keyPath -Name "StartLayoutFile" -Value $layoutFile
-}
-
-#Restart Explorer, open the start menu (necessary to load the new layout), and give it a few seconds to process
-Stop-Process -name explorer
-Start-Sleep -s 5
-
-#Enable the ability to pin items again by disabling "LockedStartLayout"
-foreach ($regAlias in $regAliases){
-    $basePath = $regAlias + ":\SOFTWARE\Policies\Microsoft\Windows"
-    $keyPath = $basePath + "\Explorer"
-    Set-ItemProperty -Path $keyPath -Name "LockedStartLayout" -Value 0
-}
-
-#Restart Explorer and delete the layout file
-Stop-Process -name explorer
-Start-Sleep -s 5
-
-Remove-Item $layoutFile
 
 # Set Windows to Dark Mode
 reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes" /f
@@ -412,10 +343,13 @@ reg add "HKEY_USERS\.DEFAULT\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Pe
 reg add "HKEY_USERS\.DEFAULT\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v "AppsUseLightTheme" /t "REG_DWORD" /d "0" /f
 reg add "HKEY_USERS\.DEFAULT\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v "SystemUsesLightTheme" /t "REG_DWORD" /d "0" /f
 
-##########
-# Restart
-##########
+# Restart Explorer
+Stop-Process -name explorer
+Start-Sleep -s 5
+
+# End
 Write-Host
-Write-Host "Please restart your system!" -ForegroundColor Black -BackgroundColor White
+Write-Host "Configurations applied successfully"
+Write-Host "You may need to restart your system!" -ForegroundColor Black -BackgroundColor White
 $key = $host.UI.RawUI.ReadKey()
 
